@@ -43,5 +43,8 @@ typedef struct
     void save_blockchain_to_json(blockchain Blockchain);
     transaction generateTransaction();
     void load_transactions_from_json(transaction pending[],int *n);
+    void load_blockchain_from_json(blockchain *Blockchain);
+    void deleteTransaction(transaction T[],int *n);
+    int searchTransaction(Blockchain,numero);
 
 //endofprototypes

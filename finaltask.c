@@ -60,13 +60,15 @@ void addblock(transaction pending[],blockchain *Blockchain){
     }
     }
 void addtransaction(transaction pending[],int *n,blockchain *Blockchain){
-    if (*n==9)
+    if (*n==10)
     {
         addblock(pending,Blockchain);
         *n=0;
     }
     pending[*n]=transactionData();
-	*n++;
+    *n++;
+    
+	
 }
 void serialiseBlock(block b, char m[]){
     sprintf(m, "%d%s%s", b.header.index, b.header.time, b.prevHash);
@@ -106,7 +108,8 @@ void save_transactions_to_json(transaction pending[],int n){
 
     fprintf(fptr,"[\n");
     int i,j;
-    for(i=0;i<n;i++){
+    for(i=0;i<n-1;i++){
+    	
         fprintf(fptr,"{\n");        
         
         fprintf(fptr,"\"date\": \"%s\",\n",pending[i].date);
@@ -115,6 +118,13 @@ void save_transactions_to_json(transaction pending[],int n){
         fprintf(fptr,"\"amount\": %d\n",pending[i].amount);
         fprintf(fptr,"},\n");
     }
+    fprintf(fptr,"{\n");        
+        
+        fprintf(fptr,"\"date\": \"%s\",\n",pending[n-1].date);
+        fprintf(fptr,"\"benificiary\": \"%s\",\n",pending[n-1].beneficiary);
+        fprintf(fptr,"\"number\": %d,\n",pending[n-1].number);
+        fprintf(fptr,"\"amount\": %d\n",pending[n-1].amount);
+        fprintf(fptr,"}\n");
     fprintf(fptr, "]\n");
     fclose(fptr);
 }
@@ -210,27 +220,179 @@ void load_transactions_from_json(transaction pending[],int *n){
     fclose(fptr);
     
 }
+void load_blockchain_from_json(blockchain *Blockchain){
 
+    FILE *fptr;
+    fptr = fopen("blockchain.json", "r");
+    if (fptr == NULL)
+    {
+        printf("Error!");
+        exit(1);
+    }
+    char c;
+    int i=0;
+    while((c = fgetc(fptr)) != EOF){
+        if(c=='{'){
+            char key[20];
+            char value[20];
+            int j=0;
+            while((c = fgetc(fptr)) != '}'){
+                if(c=='\"'){
+                    j=0;
+                    while((c = fgetc(fptr)) != '\"'){
+                        key[j]=c;
+                        j++;
+                    }
+                    key[j]='\0';
+                    j=0;
+                    while((c = fgetc(fptr)) != '\"'){
+                        value[j]=c;
+                        j++;
+                    }
+                    value[j]='\0';
+                    if(strcmp(key,"Hash")==0){
+                        strcpy(Blockchain->head->Hash,value);
+                    }
+                    if(strcmp(key,"index")==0){
+                        Blockchain->head->header.index=atoi(value);
+                    }
+                    if(strcmp(key,"time")==0){
+                        strcpy(Blockchain->head->header.time,value);
+                    }
+                    if(strcmp(key,"amount")==0){
+                        Blockchain->head->T[i].amount=atoi(value);
+                    }
+                    if(strcmp(key,"benificiary")==0){
+                        strcpy(Blockchain->head->T[i].beneficiary,value);
+                    }
+                    if(strcmp(key,"date")==0){
+                        strcpy(Blockchain->head->T[i].date,value);
+                    }
+                    if(strcmp(key,"number")==0){
+                        Blockchain->head->T[i].number=atoi(value);
+                    }
+                    if(strcmp(key,"prevHash")==0){
+                        strcpy(Blockchain->head->prevHash,value);
+                    }
+                }
+            }
+            i++;
+        }
+    
+
+    }
+    fclose(fptr);
+    
+}
+void deleteTransaction(transaction T[],int *n){
+    printf("entrer le numero de transaction");
+    int num;
+    scanf("%d",&num);
+    int i,j;
+    for ( i = 0; i < n; i++)
+    {
+        if (T[i].number==num)
+        {
+            for ( j = i; j < n-1; j++)
+            {
+                T[j]=T[j+1];
+            }
+            *n=n-1;
+            i=20;
+            
+        }
+        
+    }
+    if(i!=20)
+    printf("transaction non trouvee");
+
+}
+int searchTransaction(blockchain Blockchain,int numero){
+    block *p=Blockchain.head;
+    while(p!=NULL){
+        int i;
+        for ( i = 0; i < 10; i++)
+        {
+            if (p->T[i].number==numero)
+            {
+                printf("transaction trouvee");
+                return 0;
+            }
+            
+        }
+        p=p->next;
+    }
+    printf("transaction non trouvee");
+}
 int main(){
     blockchain Blockchain = initialiserBlockchain();
-    transaction pending[10];
+    transaction pending[11];
     int n=0;
     int i;
-    /*for(i=0;i<10;i++){
-        pending[i]=generateTransaction();
+   
 
-        n++;
-    }*/
-
-    load_transactions_from_json(pending,&n);
-    for(i=0;i<=n;i++){
+    
+char choix;
+    int x=1;
+    while (x==1){
+    	printf("veuillez introduire votre choix: \n A - pour ajouter une nouvelle transaction \n C - pour chercher une transaction (dans la blockchain ou dans Pending selon un critere de recherche) \n P - pour afficher tous les blocs / ou transactions dans la blockchain ou dans Pending\n S - pour sauvegarder la blochchain ou Pending dans le fichier appropriÃ©\n D - pour supprimer une transaction de Pending\n Q - pour quitter l'applicatio\n ");
+    
+    
+    do{
+        scanf("%c",&choix);
+    }while(choix=='a' && choix=='c' && choix=='p' && choix=='s' && choix=='d' && choix=='q' );
+    switch (choix){
+        case 'a':
+            printf("");
+			transaction t=generateTransaction();
+            if (n==10)
+            {
+                
+                printf("pending est plein");
+                addblock(pending,&Blockchain);
+                n=0;
+            }
+            
+            pending[n]=t;
+            n++;
+            printf("\n transaction ajoutée");
+            break;
+        case 'c':
+            printf("\n chercher une transaction ... \n");
+            printf("donner le numero de transaction \n");
+            int numero;
+            scanf("%d",&numero);
+            searchTransaction(Blockchain,numero);
+            break;
+        case 'p':
+            printf("\n afficher tous les blocs / ou transactions dans la blockchain ou dans Pending\n");
+            showblock(Blockchain);
+            break;
+        case 's':
+            printf(" \nsauvegarder la blochchain ou Pending dans le fichier approprie\n");
+            save_blockchain_to_json(Blockchain);
+            save_transactions_to_json(pending,n);
+            break;
+        case 'd':
+            printf("\nsupprimer une transaction de Pending \n");
+            deleteTransaction(pending,&n);
+            break;
+        case 'q':
+            
+            x=0;
+            printf("\n application quitte");
+            break;
+       
+    }
+    }
+  /*  for(i=0;i<=n;i++){
         printf("%s\n",pending[i].date);
         printf("%s\n",pending[i].beneficiary);
         printf("%d\n",pending[i].number);
         printf("%d\n",pending[i].amount);
         printf("--------------------\n");
     }
-    
+    */
     
     return 0;
 }
